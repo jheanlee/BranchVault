@@ -1,7 +1,7 @@
 [package]
 name = "migration"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 publish = false
 
 [lib]
@@ -13,5 +13,5 @@ async-std = { version = "1", features = ["attributes", "tokio1"] }
 dotenv = "0.15.0"
 
 [dependencies.sea-orm-migration]
-version = "1.1.0"
+version = "1.1.20"
 features = ["sqlx-sqlite", "runtime-tokio-native-tls"]
