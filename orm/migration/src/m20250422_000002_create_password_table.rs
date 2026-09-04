@@ -5,41 +5,41 @@ pub struct Migration;
 
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
-  async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-    manager
-      .create_table(
-        Table::create()
-          .table(Password::Table)
-          .if_not_exists()
-          .col(pk_auto(Password::Id))
-          .col(string(Password::Master))
-          .col(string(Password::Name))
-          .col(string(Password::Website))
-          .col(string(Password::Username))
-          .col(string(Password::Email))
-          .col(string(Password::EncryptedPassword))
-          .col(string(Password::Notes))
-          .to_owned(),
-      )
-      .await
-  }
+    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .create_table(
+                Table::create()
+                    .table(Password::Table)
+                    .if_not_exists()
+                    .col(pk_auto(Password::Id))
+                    .col(string(Password::Master))
+                    .col(string(Password::Name))
+                    .col(string(Password::Website))
+                    .col(string(Password::Username))
+                    .col(string(Password::Email))
+                    .col(string(Password::EncryptedPassword))
+                    .col(string(Password::Notes))
+                    .to_owned(),
+            )
+            .await
+    }
 
-  async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-    manager
-      .drop_table(Table::drop().table(Password::Table).to_owned())
-      .await
-  }
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .drop_table(Table::drop().table(Password::Table).to_owned())
+            .await
+    }
 }
 
 #[derive(DeriveIden)]
 enum Password {
-  Table,
-  Id,
-  Master,
-  Name,
-  Website,
-  Username,
-  Email,
-  EncryptedPassword,
-  Notes,
+    Table,
+    Id,
+    Master,
+    Name,
+    Website,
+    Username,
+    Email,
+    EncryptedPassword,
+    Notes,
 }

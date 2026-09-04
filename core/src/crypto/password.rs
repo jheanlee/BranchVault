@@ -5,9 +5,9 @@
 // use argon2::Argon2;
 // use openssl::base64;
 // use openssl::rand::rand_bytes;
-// 
+//
 
-// 
+//
 // pub fn aes_256_encrypt(key: &[u8; 32], nonce: &mut [u8; 12], plain_text: String) -> Result<Vec<u8>, ApiError> {
 //   let key = GenericArray::from_slice(key);
 //   let cipher = Aes256GcmSiv::new(&key);
@@ -16,7 +16,7 @@
 //   let cipher_text = cipher.encrypt(nonce, plain_text.as_bytes());
 //   Ok(cipher_text.map_err(|err| anyhow::anyhow!("{}", err.to_string()))?)
 // }
-// 
+//
 // pub fn aes_256_decrypt(key: &[u8; 32], nonce: &[u8; 12], cipher_text: Vec<u8>) -> Result<Vec<u8>, ApiError> {
 //   let key = GenericArray::from_slice(key);
 //   let cipher = Aes256GcmSiv::new(&key);
