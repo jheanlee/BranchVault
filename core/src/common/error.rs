@@ -1,7 +1,7 @@
 use axum::http::StatusCode;
 use axum::response::Response;
-use log::warn;
 use std::fmt::Formatter;
+use tracing::warn;
 
 #[derive(Debug)]
 pub enum ApiError {
@@ -13,7 +13,7 @@ impl axum::response::IntoResponse for ApiError {
     fn into_response(self) -> Response {
         match self {
             ApiError::Error(e) => {
-                warn!("{e}");
+                warn!("ApiError: {e}");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
             }
             ApiError::StatusCode(code) => code.into_response(),

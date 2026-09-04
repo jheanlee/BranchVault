@@ -1,7 +1,7 @@
 use crate::common::error::ApiError;
-use log::info;
 use rsa::pkcs8::{EncodePrivateKey, EncodePublicKey};
 use rsa::{RsaPrivateKey, RsaPublicKey};
+use tracing::info;
 
 pub async fn generate_rsa_key_pair(priv_path: &str, pub_path: &str) -> Result<(), ApiError> {
     info!("Generating RSA key pair");

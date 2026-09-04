@@ -17,7 +17,7 @@ pub async fn signup_availability_middleware(
     request: Request,
     next: Next,
 ) -> Result<axum::response::Response, StatusCode> {
-    if CONFIG_CELL.get().unwrap().self_signup_enabled {
+    if CONFIG_CELL.get().unwrap().allow_signup {
         let response = next.run(request).await;
         Ok(response)
     } else {
@@ -29,7 +29,7 @@ pub async fn get_signup_availability() -> Result<impl IntoResponse, ApiError> {
     let response_builder =
         Response::builder().header(http::header::CONTENT_TYPE, "application/json");
     let response_body = Body::from(serde_json::to_string(&json!({
-      "signup_available" : CONFIG_CELL.get().unwrap().self_signup_enabled
+      "signup_available" : CONFIG_CELL.get().unwrap().allow_signup
     }))?);
     let response = response_builder.body(response_body)?;
     Ok(response)

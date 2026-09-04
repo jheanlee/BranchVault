@@ -14,10 +14,13 @@ use crate::orm::tables::init_tables;
 use axum::middleware;
 use axum::routing::{delete, get, post, put};
 use clap::Parser;
-use log::{LevelFilter, error};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::process::exit;
 use tokio::fs::create_dir_all;
+use tracing::error;
+use tracing::log::LevelFilter;
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::util::SubscriberInitExt;
 
 mod api;
 mod auth;
@@ -33,7 +36,7 @@ pub struct Shared {
 pub struct Config {
     pub jwt_pub_key_path: String,
     pub jwt_priv_key_path: String,
-    pub self_signup_enabled: bool,
+    pub allow_signup: bool,
 }
 
 static SHARED_CELL: once_cell::sync::OnceCell<Shared> = once_cell::sync::OnceCell::new();
@@ -42,21 +45,23 @@ static CONFIG_CELL: once_cell::sync::OnceCell<Config> = once_cell::sync::OnceCel
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    env_logger::Builder::from_default_env()
-        .filter_level(args.verbose_level())
-        .init();
+    let subscriber = tracing_subscriber::fmt()
+        .with_writer(std::io::stdout)
+        .with_env_filter(EnvFilter::from_default_env())
+        .finish();
+    subscriber.init();
 
     if !tokio::fs::try_exists(args.jwt_credentials_dir.clone())
         .await
         .unwrap_or_else(|e| {
-            error!("{e}");
+            error!("JWT credential directory does not exist: {e}");
             exit(1);
         })
     {
         create_dir_all(args.jwt_credentials_dir.clone())
             .await
             .unwrap_or_else(|e| {
-                error!("{e}");
+                error!("JWT credential directory does not exist and cannot be created: {e}");
                 exit(1);
             })
     }
@@ -65,7 +70,7 @@ async fn main() {
         .set(Config {
             jwt_pub_key_path: args.jwt_credentials_dir.clone() + "/walnut-jwt-public-key.pem",
             jwt_priv_key_path: args.jwt_credentials_dir + "/walnut-jwt-private-key.pem",
-            self_signup_enabled: args.self_signup,
+            allow_signup: args.allow_signup,
         })
         .unwrap_or_else(|_| {
             error!("Failed to set configuration");
@@ -79,55 +84,49 @@ async fn main() {
     .await;
     match jwt_key_pair {
         Ok(_) => {}
-        Err(TokioError(e)) => match e.kind() {
-            tokio::io::ErrorKind::NotFound => {
-                generate_rsa_key_pair(
-                    CONFIG_CELL.get().unwrap().jwt_priv_key_path.as_str(),
-                    CONFIG_CELL.get().unwrap().jwt_pub_key_path.as_str(),
-                )
-                .await
-                .unwrap_or_else(|e| {
-                    error!("{e}");
-                    exit(1);
-                });
-                jwt_key_pair = init_jwt_keys(
-                    CONFIG_CELL.get().unwrap().jwt_priv_key_path.as_str(),
-                    CONFIG_CELL.get().unwrap().jwt_pub_key_path.as_str(),
-                )
-                .await;
-            }
-            _ => {
+        Err(TokioError(e)) if matches!(e.kind(), tokio::io::ErrorKind::NotFound) => {
+            generate_rsa_key_pair(
+                CONFIG_CELL.get().unwrap().jwt_priv_key_path.as_str(),
+                CONFIG_CELL.get().unwrap().jwt_pub_key_path.as_str(),
+            )
+            .await
+            .unwrap_or_else(|e| {
                 error!("{e}");
                 exit(1);
-            }
-        },
+            });
+            jwt_key_pair = init_jwt_keys(
+                CONFIG_CELL.get().unwrap().jwt_priv_key_path.as_str(),
+                CONFIG_CELL.get().unwrap().jwt_pub_key_path.as_str(),
+            )
+            .await;
+        }
         Err(e) => {
-            error!("{e}");
+            error!("Failed to initialize JWT keys{e}");
             exit(1);
         }
     }
 
     let mut database_option = ConnectOptions::new(args.database);
-    database_option.sqlx_logging_level(LevelFilter::Warn);
+    database_option.sqlx_logging_level(LevelFilter::Debug);
 
     SHARED_CELL
         .set(Shared {
             database_connection: Some(Database::connect(database_option).await.unwrap_or_else(
                 |e| {
                     error!("{e}");
-                    panic!();
+                    exit(1);
                 },
             )),
             jwt_key_pair: jwt_key_pair.unwrap(),
         })
         .unwrap_or_else(|_| {
             error!("Failed to set shared resources");
-            panic!();
+            exit(1);
         });
 
     init_tables().await.unwrap_or_else(|e| {
         error!("{e}");
-        panic!();
+        exit(1);
     });
 
     let app = axum::Router::new()
@@ -162,15 +161,17 @@ async fn main() {
         .route("/api/master/username", get(is_username_available))
         .route("/api/master/login", post(master_login));
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
+    //  TODO serve webui
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000") //  TODO port configuration
         .await
         .unwrap_or_else(|e| {
-            log::error!("{e}");
-            panic!();
+            error!("Failed to listen on port: {e}");
+            exit(1);
         });
 
     axum::serve(listener, app).await.unwrap_or_else(|e| {
-        log::error!("{e}");
-        panic!();
+        error!("Failed to serve API: {e}");
+        exit(1);
     });
 }

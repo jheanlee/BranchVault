@@ -26,8 +26,8 @@ impl From<tokio::io::Error> for JwtKeyError {
 impl std::fmt::Display for JwtKeyError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            JwtKeyError::TokioError(e) => write!(f, "{e}"),
-            JwtKeyError::JwtError(e) => write!(f, "{e}"),
+            JwtKeyError::TokioError(e) => write!(f, "TokioError: {e}"),
+            JwtKeyError::JwtError(e) => write!(f, "JwtError: {e}"),
         }
     }
 }
