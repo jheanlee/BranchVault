@@ -1,4 +1,4 @@
-# walnut-server
+# Walnut
 work in progress
 
 ## License
