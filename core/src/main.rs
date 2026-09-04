@@ -5,6 +5,7 @@ use crate::api::master::{
     delete_master, get_signup_availability, is_username_available, list_master, master_login,
     master_signup, modify_master, new_master, signup_availability_middleware,
 };
+use crate::api::static_handler::static_handler;
 use crate::auth::jwt::verify_token;
 use crate::auth::key::JwtKeyError::TokioError;
 use crate::auth::key::{JwtKeyPair, init_jwt_keys};
@@ -159,9 +160,8 @@ async fn main() {
             post(master_signup).layer(middleware::from_fn(signup_availability_middleware)),
         )
         .route("/api/master/username", get(is_username_available))
-        .route("/api/master/login", post(master_login));
-
-    //  TODO serve webui
+        .route("/api/master/login", post(master_login))
+        .fallback(static_handler);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000") //  TODO port configuration
         .await
