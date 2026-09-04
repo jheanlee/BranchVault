@@ -1,21 +1,16 @@
 .DS_Store
-CMakeFiles
 .idea
-cmake-build*
 
-orm/migration/target
-orm/entity/target
 orm/migration/Cargo.lock
 orm/entity/Cargo.lock
 
+node_modules
+
+dist
 target
 *.sqlite
 credentials
 
-*.o
-*.a
-
 bin
-lib
 
 .env
