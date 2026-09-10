@@ -18,8 +18,8 @@ use clap::Parser;
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::process::exit;
 use tokio::fs::create_dir_all;
-use tracing::error;
 use tracing::log::LevelFilter;
+use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::util::SubscriberInitExt;
 
@@ -52,14 +52,14 @@ async fn main() {
         .finish();
     subscriber.init();
 
-    if !tokio::fs::try_exists(args.jwt_credentials_dir.clone())
+    if !tokio::fs::try_exists(args.jwt_credentials.clone())
         .await
         .unwrap_or_else(|e| {
             error!("JWT credential directory does not exist: {e}");
             exit(1);
         })
     {
-        create_dir_all(args.jwt_credentials_dir.clone())
+        create_dir_all(args.jwt_credentials.clone())
             .await
             .unwrap_or_else(|e| {
                 error!("JWT credential directory does not exist and cannot be created: {e}");
@@ -69,8 +69,8 @@ async fn main() {
 
     CONFIG_CELL
         .set(Config {
-            jwt_pub_key_path: args.jwt_credentials_dir.clone() + "/walnut-jwt-public-key.pem",
-            jwt_priv_key_path: args.jwt_credentials_dir + "/walnut-jwt-private-key.pem",
+            jwt_pub_key_path: args.jwt_credentials.clone() + "/walnut-jwt-public-key.pem",
+            jwt_priv_key_path: args.jwt_credentials + "/walnut-jwt-private-key.pem",
             allow_signup: args.allow_signup,
         })
         .unwrap_or_else(|_| {
@@ -163,12 +163,14 @@ async fn main() {
         .route("/api/master/login", post(master_login))
         .fallback(static_handler);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000") //  TODO port configuration
+    let listener = tokio::net::TcpListener::bind(args.bind_address)
         .await
         .unwrap_or_else(|e| {
             error!("Failed to listen on port: {e}");
             exit(1);
         });
+
+    info!("Listening on {}", args.bind_address);
 
     axum::serve(listener, app).await.unwrap_or_else(|e| {
         error!("Failed to serve API: {e}");
