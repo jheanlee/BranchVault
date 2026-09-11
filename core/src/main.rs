@@ -7,17 +7,18 @@ use crate::api::master::{
 };
 use crate::api::static_handler::static_handler;
 use crate::auth::jwt::verify_token;
-use crate::auth::key::JwtKeyError::TokioError;
+use std::path::PathBuf;
+// use crate::auth::key::JwtKeyError::TokioError;
 use crate::auth::key::{JwtKeyPair, init_jwt_keys};
 use crate::common::opt::Args;
-use crate::crypto::rsa::generate_rsa_key_pair;
+// use crate::crypto::rsa::generate_rsa_key_pair;
 use crate::orm::tables::init_tables;
 use axum::middleware;
 use axum::routing::{delete, get, post, put};
 use clap::Parser;
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::process::exit;
-use tokio::fs::create_dir_all;
+// use tokio::fs::create_dir_all;
 use tracing::log::LevelFilter;
 use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
@@ -35,8 +36,8 @@ pub struct Shared {
 }
 
 pub struct Config {
-    pub jwt_pub_key_path: String,
-    pub jwt_priv_key_path: String,
+    pub jwt_pub_key_path: PathBuf,
+    pub jwt_priv_key_path: PathBuf,
     pub allow_signup: bool,
 }
 
@@ -52,25 +53,25 @@ async fn main() {
         .finish();
     subscriber.init();
 
-    if !tokio::fs::try_exists(args.jwt_credentials.clone())
-        .await
-        .unwrap_or_else(|e| {
-            error!("JWT credential directory does not exist: {e}");
-            exit(1);
-        })
-    {
-        create_dir_all(args.jwt_credentials.clone())
-            .await
-            .unwrap_or_else(|e| {
-                error!("JWT credential directory does not exist and cannot be created: {e}");
-                exit(1);
-            })
-    }
+    // if !tokio::fs::try_exists(args.jwt_credentials.clone())
+    //     .await
+    //     .unwrap_or_else(|e| {
+    //         error!("JWT credential directory does not exist: {e}");
+    //         exit(1);
+    //     })
+    // {
+    //     create_dir_all(args.jwt_credentials.clone())
+    //         .await
+    //         .unwrap_or_else(|e| {
+    //             error!("JWT credential directory does not exist and cannot be created: {e}");
+    //             exit(1);
+    //         })
+    // }
 
     CONFIG_CELL
         .set(Config {
-            jwt_pub_key_path: args.jwt_credentials.clone() + "/walnut-jwt-public-key.pem",
-            jwt_priv_key_path: args.jwt_credentials + "/walnut-jwt-private-key.pem",
+            jwt_pub_key_path: args.jwt_key_public,
+            jwt_priv_key_path: args.jwt_key_private,
             allow_signup: args.allow_signup,
         })
         .unwrap_or_else(|_| {
@@ -78,29 +79,29 @@ async fn main() {
             exit(1);
         });
 
-    let mut jwt_key_pair = init_jwt_keys(
-        CONFIG_CELL.get().unwrap().jwt_priv_key_path.as_str(),
-        CONFIG_CELL.get().unwrap().jwt_pub_key_path.as_str(),
+    let jwt_key_pair = init_jwt_keys(
+        CONFIG_CELL.get().unwrap().jwt_priv_key_path.as_path(),
+        CONFIG_CELL.get().unwrap().jwt_pub_key_path.as_path(),
     )
     .await;
     match jwt_key_pair {
         Ok(_) => {}
-        Err(TokioError(e)) if matches!(e.kind(), tokio::io::ErrorKind::NotFound) => {
-            generate_rsa_key_pair(
-                CONFIG_CELL.get().unwrap().jwt_priv_key_path.as_str(),
-                CONFIG_CELL.get().unwrap().jwt_pub_key_path.as_str(),
-            )
-            .await
-            .unwrap_or_else(|e| {
-                error!("{e}");
-                exit(1);
-            });
-            jwt_key_pair = init_jwt_keys(
-                CONFIG_CELL.get().unwrap().jwt_priv_key_path.as_str(),
-                CONFIG_CELL.get().unwrap().jwt_pub_key_path.as_str(),
-            )
-            .await;
-        }
+        // Err(TokioError(e)) if matches!(e.kind(), tokio::io::ErrorKind::NotFound) => {
+        //     generate_rsa_key_pair(
+        //         CONFIG_CELL.get().unwrap().jwt_priv_key_path.as_str(),
+        //         CONFIG_CELL.get().unwrap().jwt_pub_key_path.as_str(),
+        //     )
+        //     .await
+        //     .unwrap_or_else(|e| {
+        //         error!("{e}");
+        //         exit(1);
+        //     });
+        //     jwt_key_pair = init_jwt_keys(
+        //         CONFIG_CELL.get().unwrap().jwt_priv_key_path.as_str(),
+        //         CONFIG_CELL.get().unwrap().jwt_pub_key_path.as_str(),
+        //     )
+        //     .await;
+        // }
         Err(e) => {
             error!("Failed to initialize JWT keys{e}");
             exit(1);

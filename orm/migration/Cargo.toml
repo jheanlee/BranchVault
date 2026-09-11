@@ -14,4 +14,4 @@ dotenv = "0.15.0"
 
 [dependencies.sea-orm-migration]
 version = "1.1.20"
-features = ["sqlx-sqlite", "runtime-tokio-native-tls"]
+features = ["sqlx-all", "runtime-tokio-native-tls"]

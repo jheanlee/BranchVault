@@ -3394,8 +3394,6 @@ dependencies = [
  "nanoid",
  "once_cell",
  "openssl",
- "rand 0.8.8",
- "rsa",
  "rust-embed",
  "sea-orm",
  "serde",
