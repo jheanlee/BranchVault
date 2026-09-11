@@ -1,5 +1,6 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use std::fmt::Formatter;
+use std::path::Path;
 
 pub struct JwtKeyPair {
     pub encoding_key: EncodingKey,
@@ -33,8 +34,8 @@ impl std::fmt::Display for JwtKeyError {
 }
 
 pub async fn init_jwt_keys(
-    private_key_path: &str,
-    public_key_path: &str,
+    private_key_path: &Path,
+    public_key_path: &Path,
 ) -> Result<JwtKeyPair, JwtKeyError> {
     let priv_bytes = tokio::fs::read(private_key_path).await?;
 
